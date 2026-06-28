@@ -1,9 +1,458 @@
-// في كود الشراء
-var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-postData({
-coin_send
-user_id
-631438
-expect_html
-100
-})
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="CSRF_TOKEN_HERE">
+    <title>ارسال الكوينز</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .field-group {
+            margin-bottom: 14px;
+        }
+
+        .field-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .field {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #dcdcdc;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #333;
+            background: #fafafa;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .field:focus {
+            border-color: #4e7cf6;
+            background: #fff;
+        }
+
+        .field:disabled {
+            background: #f0f0f0;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        .commission-hint {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .net-preview-box {
+            border: 1px solid #dcdcdc;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-top: 10px;
+            background: #fafafa;
+            font-size: 14px;
+            line-height: 1.9;
+        }
+
+        .net-preview-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .net-preview-row.commission {
+            color: #c0392b;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 18px;
+            transition: background 0.2s, opacity 0.2s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #4e7cf6;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #3a68e0;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #555;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Confirm Step */
+        .confirm-box {
+            display: none;
+        }
+
+        .confirm-box.active {
+            display: block;
+        }
+
+        .send-form-box.hidden {
+            display: none;
+        }
+
+        .confirm-summary {
+            background: #f4f6f9;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            line-height: 2;
+        }
+
+        .confirm-summary .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .confirm-summary .row .label {
+            color: #888;
+        }
+
+        .confirm-summary .row .value {
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .confirm-summary .row.net .value {
+            color: #27ae60;
+        }
+
+        .confirm-summary .row.commission .value {
+            color: #c0392b;
+        }
+
+        .confirm-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .status-msg {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .status-msg.success {
+            background: #e8f8f0;
+            color: #27ae60;
+            display: block;
+        }
+
+        .status-msg.error {
+            background: #fdecea;
+            color: #c0392b;
+            display: block;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="modal-box">
+    <div class="modal-title">ارسال الكوينز</div>
+
+    <!-- Step 1: Send Form -->
+    <div class="send-form-box" id="sendFormBox">
+        <form id="coinSendForm" onsubmit="handleSendStep(event)">
+
+            <!-- Hidden Fields -->
+            <input type="hidden" name="load" value="coin_send" class="d-none">
+            <input type="hidden" name="recipient_user_id" value="631438" class="d-none">
+            <input type="hidden" name="confirm_step" id="confirmStepInput" value="0">
+
+            <!-- Name Field (disabled) -->
+            <div class="field-group">
+                <label>اسم</label>
+                <input
+                    type="text"
+                    class="field"
+                    placeholder="اسم"
+                    value="⊶⋆⊷"
+                    disabled
+                >
+            </div>
+
+            <!-- Coins Field -->
+            <div class="field-group">
+                <label>كوينز</label>
+                <input
+                    type="number"
+                    class="field calculate_net_coins"
+                    id="coinsInput"
+                    name="coins_to_send"
+                    placeholder="كوينز"
+                    min="100"
+                    step="1"
+                    data-commission="30"
+                    oninput="updatePreview(this)"
+                    onkeyup="updatePreview(this)"
+                    onchange="updatePreview(this)"
+                    required
+                >
+                <small class="commission-hint">يتم اقتطاع 30% رسوم تحويل من المبلغ المرسل.</small>
+
+                <!-- Net Preview -->
+                <div class="net-preview-box">
+                    <div class="net-preview-row">
+                        <strong>سيصل للمستخدم:</strong>
+                        <span><span class="net_value">0.00</span> كوينز</span>
+                    </div>
+                    <div class="net-preview-row commission">
+                        <strong>الرسوم (30%):</strong>
+                        <span><span class="commission_value">0.00</span> كوينز</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="nextBtn">
+                التالي للتأكيد
+            </button>
+        </form>
+    </div>
+
+    <!-- Step 2: Confirm -->
+    <div class="confirm-box" id="confirmBox">
+        <div class="confirm-title">تأكيد الارسال</div>
+
+        <div class="confirm-summary" id="confirmSummary">
+            <div class="row">
+                <span class="label">المستلم:</span>
+                <span class="value" id="summaryName">⊶⋆⊷</span>
+            </div>
+            <div class="row">
+                <span class="label">المبلغ المرسل:</span>
+                <span class="value" id="summaryAmount">0 كوينز</span>
+            </div>
+            <div class="row net">
+                <span class="label">سيصل للمستخدم:</span>
+                <span class="value" id="summaryNet">0 كوينز</span>
+            </div>
+            <div class="row commission">
+                <span class="label">الرسوم (30%):</span>
+                <span class="value" id="summaryCommission">0 كوينز</span>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" id="confirmBtn" onclick="handleConfirmStep()">
+            تأكيد الارسال
+        </button>
+        <button class="btn btn-secondary" onclick="goBack()">
+            رجوع
+        </button>
+
+        <div class="status-msg" id="statusMsg"></div>
+    </div>
+</div>
+
+<script>
+    var confirmStep = 0;
+
+    function updatePreview(input) {
+        var amount = parseFloat(input.value || 0);
+        if (isNaN(amount) || amount < 0) { amount = 0; }
+
+        var commission = amount * 0.30;
+        var net = amount - commission;
+
+        var form = input.closest('form') || document;
+
+        var netBox = form.querySelector('.net_value');
+        var commissionBox = form.querySelector('.commission_value');
+
+        if (netBox) { netBox.textContent = net.toFixed(2); }
+        if (commissionBox) { commissionBox.textContent = commission.toFixed(2); }
+    }
+
+    function handleSendStep(e) {
+        e.preventDefault();
+
+        var coinsInput = document.getElementById('coinsInput');
+        var amount = parseFloat(coinsInput.value || 0);
+
+        if (isNaN(amount) || amount < 100) {
+            alert('الحد الأدنى للإرسال هو 100 كوينز');
+            return;
+        }
+
+        var commission = amount * 0.30;
+        var net = amount - commission;
+
+        // Fill confirm summary
+        document.getElementById('summaryAmount').textContent = amount.toFixed(2) + ' كوينز';
+        document.getElementById('summaryNet').textContent = net.toFixed(2) + ' كوينز';
+        document.getElementById('summaryCommission').textContent = commission.toFixed(2) + ' كوينز';
+
+        // Switch to confirm step
+        document.getElementById('sendFormBox').classList.add('hidden');
+        document.getElementById('confirmBox').classList.add('active');
+
+        confirmStep = 1;
+    }
+
+    function handleConfirmStep() {
+        var confirmBtn = document.getElementById('confirmBtn');
+        var statusMsg = document.getElementById('statusMsg');
+
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = 'جاري الإرسال <span class="loading-spinner"></span>';
+        statusMsg.className = 'status-msg';
+        statusMsg.style.display = 'none';
+
+        var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        var coinsInput = document.getElementById('coinsInput');
+
+        postData({
+            load: 'coin_send',
+            recipient_user_id: '631438',
+            coins_to_send: String(coinsInput.value),
+            confirm_step: String(confirmStep),
+            csrf_token: csrfToken
+        });
+    }
+
+    function postData(data) {
+        var params = new URLSearchParams();
+        for (var key in data) {
+            params.append(key, data[key]);
+        }
+
+        fetch('https://7rkchat.com/web_request/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'include',
+            body: params.toString()
+        })
+        .then(function(response) { return response.text(); })
+        .then(function(result) {
+            var confirmBtn = document.getElementById('confirmBtn');
+            var statusMsg = document.getElementById('statusMsg');
+
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = 'تأكيد الارسال';
+
+            // Try parse JSON response
+            try {
+                var json = JSON.parse(result);
+                if (json.status === 'success' || json.success) {
+                    statusMsg.className = 'status-msg success';
+                    statusMsg.textContent = json.message || 'تم ارسال الكوينز بنجاح!';
+                } else {
+                    statusMsg.className = 'status-msg error';
+                    statusMsg.textContent = json.message || 'حدث خطأ، يرجى المحاولة مجددًا.';
+                }
+            } catch(err) {
+                // HTML response
+                statusMsg.className = 'status-msg success';
+                statusMsg.textContent = 'تم ارسال الكوينز بنجاح!';
+            }
+        })
+        .catch(function(err) {
+            var confirmBtn = document.getElementById('confirmBtn');
+            var statusMsg = document.getElementById('statusMsg');
+
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = 'تأكيد الارسال';
+
+            statusMsg.className = 'status-msg error';
+            statusMsg.textContent = 'حدث خطأ في الاتصال، يرجى المحاولة مجددًا.';
+        });
+    }
+
+    function goBack() {
+        document.getElementById('sendFormBox').classList.remove('hidden');
+        document.getElementById('confirmBox').classList.remove('active');
+        document.getElementById('statusMsg').className = 'status-msg';
+        document.getElementById('statusMsg').style.display = 'none';
+        confirmStep = 0;
+    }
+</script>
+
+</body>
+</html>
