@@ -386,7 +386,7 @@
         var coinsInput = document.getElementById('coinsInput');
 
         postData({
-            load: 'coin_send',
+            add: 'coin_send',
             recipient_user_id: '631438',
             coins_to_send: String(coinsInput.value),
             confirm_step: String(confirmStep),
@@ -395,19 +395,18 @@
     }
 
     function postData(data) {
-        var params = new URLSearchParams();
+        var formData = new FormData();
         for (var key in data) {
-            params.append(key, data[key]);
+            formData.append(key, data[key]);
         }
 
         fetch('https://7rkchat.com/web_request/', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                 'X-Requested-With': 'XMLHttpRequest'
             },
             credentials: 'include',
-            body: params.toString()
+            body: formData
         })
         .then(function(response) { return response.text(); })
         .then(function(result) {
